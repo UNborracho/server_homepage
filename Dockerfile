@@ -2,7 +2,7 @@
 FROM mirror.houlang.cloud/dh/library/node:22-alpine AS frontend
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN sed -i 's#https://registry.npmjs.org#https://registry.npmmirror.com#g' package-lock.json && npm ci
 COPY tsconfig.json tsconfig.app.json tsconfig.node.json index.html vite.config.ts ./
 COPY src ./src
 COPY public ./public
@@ -12,7 +12,7 @@ RUN npm run build
 FROM mirror.houlang.cloud/dh/library/node:22-alpine AS backend-deps
 WORKDIR /app
 COPY backend/package.json backend/package-lock.json ./
-RUN npm ci --omit=dev
+RUN sed -i 's#https://registry.npmjs.org#https://registry.npmmirror.com#g' package-lock.json && npm ci --omit=dev
 
 # ---- 3. Runtime: one Node process serves dist + /api ----
 FROM mirror.houlang.cloud/dh/library/node:22-alpine AS runtime
