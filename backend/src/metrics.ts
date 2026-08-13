@@ -113,10 +113,13 @@ function readProcesses(): number | null {
 }
 
 function readTcp(): number | null {
+  // /proc/net/* resolves to the *reader's* network namespace, so from inside a
+  // container /host/proc/net/tcp shows the container's own (empty) table.
+  // Read PID 1's netns instead — host init lives in the host netns.
   let count = 0
   let saw = false
   for (const name of ["tcp", "tcp6"]) {
-    const data = tryRead(join(PROC, "net", name))
+    const data = tryRead(join(PROC, "1", "net", name))
     if (!data) continue
     saw = true
     for (const line of data.split("\n").slice(1)) {
