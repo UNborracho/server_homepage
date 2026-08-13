@@ -1,0 +1,10 @@
+{
+  "description": "Effortlessly monitor and manage local server services with a sleek, customizable dashboard featuring real-time status updates and insightful data visualizations.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

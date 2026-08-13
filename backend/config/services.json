@@ -1,0 +1,49 @@
+{
+  "services": [
+    {
+      "id": "immich",
+      "name": "Immich",
+      "url": "http://192.168.0.118:2283",
+      "category": "Media",
+      "iconKey": "images",
+      "color": "#3B82F6",
+      "port": 2283
+    },
+    {
+      "id": "new-api",
+      "name": "New API",
+      "url": "http://192.168.0.118:3000",
+      "category": "AI",
+      "iconKey": "sparkles",
+      "color": "#A855F7",
+      "port": 3000
+    },
+    {
+      "id": "kaneo",
+      "name": "Kaneo",
+      "url": "http://192.168.0.118:5173",
+      "category": "Productivity",
+      "iconKey": "kanban",
+      "color": "#F59E0B",
+      "port": 5173
+    },
+    {
+      "id": "portainer",
+      "name": "Portainer",
+      "url": "https://192.168.0.118:9443",
+      "category": "Infra",
+      "iconKey": "container",
+      "color": "#00E5FF",
+      "port": 9443
+    },
+    {
+      "id": "astrbot",
+      "name": "AstrBot",
+      "url": "http://192.168.0.118:6185",
+      "category": "AI",
+      "iconKey": "bot",
+      "color": "#22C55E",
+      "port": 6185
+    }
+  ]
+}

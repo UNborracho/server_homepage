@@ -1,0 +1,13 @@
+services:
+  homepage:
+    build: .
+    image: server-homepage:latest
+    container_name: server-homepage
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    # Read-only views of the host so the backend can read real metrics.
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/hostfs:ro

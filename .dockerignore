@@ -1,0 +1,9 @@
+node_modules
+dist
+dist-ssr
+backend/node_modules
+.git
+.gitignore
+.DS_Store
+*.log
+Self-hosted Server Homepage
