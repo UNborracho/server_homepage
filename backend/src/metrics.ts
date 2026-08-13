@@ -55,20 +55,40 @@ function readCpu(): CpuSample | null {
   return { idle, total }
 }
 
-function readNet(): NetSample | null {
-  const data = tryRead(join(PROC, "net", "dev"))
+function defaultInterface(): string | null {
+  // /proc/net/route is netns-relative too — read PID 1's (host) table.
+  const data = tryRead(join(PROC, "1", "net", "route"))
   if (!data) return null
+  for (const line of data.split("\n").slice(1)) {
+    const parts = line.trim().split(/\s+/)
+    // Iface Destination ... — default route has Destination "00000000".
+    if (parts.length >= 8 && parts[1] === "00000000") return parts[0]
+  }
+  return null
+}
+
+function readNet(): NetSample | null {
+  // /proc/net/dev resolves to the reader's network namespace, so from inside a
+  // container /host/proc/net/dev shows the container's own interfaces. Read
+  // PID 1's netns (host) instead, and only the default-route interface to
+  // avoid double-counting docker bridges / veth pairs.
+  const data = tryRead(join(PROC, "1", "net", "dev"))
+  if (!data) return null
+  const want = defaultInterface()
   let rx = 0
   let tx = 0
+  let seen = false
   for (const line of data.split("\n").slice(2)) {
     const parts = line.trim().split(/\s+/)
     if (parts.length < 10) continue
     const iface = parts[0].replace(":", "")
     if (iface === "lo") continue
+    if (want && iface !== want) continue
+    seen = true
     rx += Number(parts[1]) || 0
     tx += Number(parts[9]) || 0
   }
-  return { rx, tx }
+  return seen ? { rx, tx } : null
 }
 
 function readMem() {

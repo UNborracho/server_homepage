@@ -23,7 +23,7 @@ export function OverviewView() {
     },
     {
       label: "CPU",
-      value: host?.cpu ? host.cpu.percent.toFixed(0) : "—",
+      value: host?.cpu ? host.cpu.percent.toFixed(1) : "—",
       unit: "%",
     },
     {
@@ -104,7 +104,7 @@ function gaugeFor(host: HostMetrics | null, key: GaugeKey) {
   switch (key) {
     case "cpu":
       return {
-        value: host?.cpu ? host.cpu.percent.toFixed(0) : "—",
+        value: host?.cpu ? host.cpu.percent.toFixed(1) : "—",
         unit: "%",
         max: "100",
         percent: host?.cpu?.percent ?? 0,
