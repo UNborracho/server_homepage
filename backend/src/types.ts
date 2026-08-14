@@ -3,13 +3,16 @@ export type ServiceStatus = "running" | "stopped" | "error"
 export interface ServiceConfig {
   id: string
   name: string
-  url: string
   category: string
   iconKey: string
   color: string
   port: number
+  /** "http" (default) or "https" — services on the same host as the dashboard. */
+  scheme?: "http" | "https"
   /** Docker container name (for start/stop control). Optional. */
   container?: string
+  /** Explicit URL override — for services on another machine. Optional. */
+  url?: string
 }
 
 export interface ServiceStatusResult extends ServiceConfig {
@@ -45,4 +48,8 @@ export interface HostMetrics {
   tcpConnections: number | null
   temperatureC: number | null
   uptimeSeconds: number | null
+  /** Default-route NIC link speed in Mbps (gauges scale to it); null unknown. */
+  netMaxMbps: number | null
+  /** Host identity, read from the hostfs mounts (container sees its own /etc otherwise). */
+  hostInfo: { hostname: string | null; os: string | null } | null
 }

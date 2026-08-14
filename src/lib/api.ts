@@ -3,12 +3,14 @@ export type ServiceStatus = "running" | "stopped" | "error"
 export interface ApiService {
   id: string
   name: string
-  url: string
   category: string
   iconKey: string
   color: string
   port: number
+  scheme?: "http" | "https"
   container?: string
+  /** Explicit URL override (services on another machine). */
+  url?: string | null
   status: ServiceStatus
   latencyMs: number | null
   checkedAt: number
@@ -26,6 +28,8 @@ export interface HostMetrics {
   tcpConnections: number | null
   temperatureC: number | null
   uptimeSeconds: number | null
+  netMaxMbps?: number | null
+  hostInfo?: { hostname: string | null; os: string | null } | null
 }
 
 export interface ContainerInfo {

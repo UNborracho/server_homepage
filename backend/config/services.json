@@ -3,7 +3,6 @@
     {
       "id": "immich",
       "name": "Immich",
-      "url": "http://192.168.0.118:2283",
       "category": "Media",
       "iconKey": "images",
       "color": "#3B82F6",
@@ -13,7 +12,6 @@
     {
       "id": "new-api",
       "name": "New API",
-      "url": "http://192.168.0.118:3000",
       "category": "AI",
       "iconKey": "sparkles",
       "color": "#A855F7",
@@ -23,7 +21,6 @@
     {
       "id": "kaneo",
       "name": "Kaneo",
-      "url": "http://192.168.0.118:5173",
       "category": "Productivity",
       "iconKey": "kanban",
       "color": "#F59E0B",
@@ -33,7 +30,6 @@
     {
       "id": "astrbot",
       "name": "AstrBot",
-      "url": "http://192.168.0.118:6185",
       "category": "AI",
       "iconKey": "bot",
       "color": "#22C55E",

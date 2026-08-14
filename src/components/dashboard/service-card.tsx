@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react"
 import { ContainerControls } from "@/components/dashboard/container-controls"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { getServiceIcon } from "@/lib/icons"
+import { resolveServiceUrl } from "@/lib/service-url"
 import type { ApiService } from "@/lib/api"
 
 export function ServiceCard({
@@ -25,7 +26,7 @@ export function ServiceCard({
       {/* Click-to-open link wraps the head + meta; control buttons live in the
           footer, outside the <a> so they don't trigger navigation. */}
       <a
-        href={service.url}
+        href={resolveServiceUrl(service)}
         target="_blank"
         rel="noreferrer"
         className="block focus-visible:outline-none"

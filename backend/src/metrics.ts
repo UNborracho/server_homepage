@@ -21,6 +21,21 @@ let prevNet: NetSample | null = null
 let lastTick = Date.now()
 let snapshot: HostMetrics = empty()
 
+function readHostInfo() {
+  // Read the *host's* identity via the hostfs mount — /etc inside the
+  // container is the runtime image's own.
+  const hostname = (() => {
+    const raw = tryRead(join(FS_ROOT, "etc", "hostname"))
+    return raw ? raw.trim() : null
+  })()
+  const os = (() => {
+    const raw = tryRead(join(FS_ROOT, "etc", "os-release"))
+    const m = raw ? /^PRETTY_NAME="?([^"\n]+)"?/m.exec(raw) : null
+    return m ? m[1] : null
+  })()
+  return { hostname, os }
+}
+
 function empty(): HostMetrics {
   return {
     ts: Date.now(),
@@ -33,6 +48,8 @@ function empty(): HostMetrics {
     tcpConnections: null,
     temperatureC: null,
     uptimeSeconds: null,
+    netMaxMbps: null,
+    hostInfo: null,
   }
 }
 
@@ -168,6 +185,16 @@ function readTemp(): number | null {
   }
 }
 
+function readNicSpeed(): number | null {
+  // Link speed of the default-route interface (Mbps). /sys/class/net/<if>/speed
+  const iface = defaultInterface()
+  if (!iface) return null
+  const raw = tryRead(join(SYS, "class", "net", iface, "speed"))
+  if (!raw) return null
+  const v = Number(raw.trim())
+  return Number.isFinite(v) && v > 0 ? v : null
+}
+
 function readUptime(): number | null {
   const data = tryRead(join(PROC, "uptime"))
   if (!data) return null
@@ -209,6 +236,8 @@ function tick(): void {
     tcpConnections: readTcp(),
     temperatureC: readTemp(),
     uptimeSeconds: readUptime(),
+    netMaxMbps: readNicSpeed(),
+    hostInfo: readHostInfo(),
   }
 }
 

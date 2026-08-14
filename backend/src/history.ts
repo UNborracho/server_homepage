@@ -23,6 +23,7 @@ const STEP_MS: Record<HistoryWindow, number> = {
 }
 
 const KEYS = ["cpu", "mem", "disk", "rx", "tx", "load", "tcp", "temp"] as const
+const DAY_MS = 86_400_000
 type Key = (typeof KEYS)[number]
 
 export interface HistoryPoint {
@@ -111,12 +112,20 @@ export function querySeries(window: HistoryWindow) {
   return { window, stepMs: step, from, to, points }
 }
 
+/** Calendar-day helpers bucket in the container's local time so charts match
+ * the user's wall clock (heat/weekly = "evening peak" must look like evening).
+ * TZ comes from compose (default Asia/Shanghai, overridable per deployment). */
+function dayStartOf(ms: number): number {
+  const d = new Date(ms)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
 /** Last 7 calendar days: per-day traffic totals + 7×24 hourly heatmap cells. */
 export function queryAggregate() {
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-  const to = todayStart.getTime() + 86_400_000 // all of today
-  const from = to - 7 * 86_400_000
+  const todayStart = dayStartOf(Date.now())
+  const to = todayStart + DAY_MS // all of today
+  const from = to - 7 * DAY_MS
 
   const weekly = Array.from({ length: 7 }, () => ({
     rx: 0,
@@ -129,11 +138,7 @@ export function queryAggregate() {
   const heat = Array.from({ length: 7 * 24 }, () => ({ s: 0, n: 0 }))
 
   for (const p of readRange(from)) {
-    const d = new Date(p.t)
-    const dayStart = new Date(d)
-    dayStart.setHours(0, 0, 0, 0)
-    const idx =
-      6 - Math.round((todayStart.getTime() - dayStart.getTime()) / 86_400_000)
+    const idx = 6 - Math.round((todayStart - dayStartOf(p.t)) / DAY_MS)
     if (idx < 0 || idx > 6) continue
     const w = weekly[idx]
     if (p.rx != null) {
@@ -148,7 +153,7 @@ export function queryAggregate() {
       w.cpuS += p.cpu
       w.cpuN++
     }
-    const cell = heat[idx * 24 + d.getHours()]
+    const cell = heat[idx * 24 + new Date(p.t).getHours()]
     if (p.rx != null || p.tx != null) {
       cell.s += ((p.rx ?? 0) + (p.tx ?? 0)) / 1e6
       cell.n++

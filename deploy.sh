@@ -21,9 +21,10 @@ rsync -avz --delete \
   --exclude '.env*' \
   --exclude 'deploy.sh' \
   --exclude 'data' \
+  --exclude 'backend/config' \
   ./ "${REMOTE}:${DEST}/"
 
 echo "▸ docker compose up -d --build"
 ssh "$REMOTE" "cd ${DEST} && docker compose up -d --build"
 
-echo "✓ deployed → http://192.168.0.118:8088"
+echo "✓ deployed → ${REMOTE}:${DEST} is live"

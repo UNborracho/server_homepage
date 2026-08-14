@@ -6,6 +6,7 @@ import type {
   ServiceStatus,
   ServiceStatusResult,
 } from "./types"
+import { probeUrl } from "./config"
 
 const CACHE_MS = 5000
 const TIMEOUT_MS = 3000
@@ -57,7 +58,7 @@ export async function probeAll(
   if (cache && Date.now() - cache.ts < CACHE_MS) return cache.data
   const results = await Promise.all(
     services.map(async (service) => {
-      const result = await probe(service.url)
+      const result = await probe(probeUrl(service))
       return {
         ...service,
         status: result.status,

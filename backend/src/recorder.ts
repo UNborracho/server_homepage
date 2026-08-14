@@ -11,6 +11,8 @@ const RETENTION_DAYS = 30
 let lastWarn = 0
 
 function dayKey(ms: number): string {
+  // Local-day key (TZ set via compose, default Asia/Shanghai — see docker-compose.yml).
+  // readRange() also pulls the previous day's file, so cross-midnight drift is harmless.
   const d = new Date(ms)
   const p = (n: number) => String(n).padStart(2, "0")
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`

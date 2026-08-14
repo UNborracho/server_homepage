@@ -1,5 +1,6 @@
 import { NAV_ITEMS } from "@/lib/data"
-import type { ApiService } from "@/lib/api"
+import { fetchHost, type ApiService } from "@/lib/api"
+import { usePoll } from "@/lib/use-poll"
 import { cn } from "@/lib/utils"
 
 export function Sidebar({
@@ -12,6 +13,9 @@ export function Sidebar({
   onNavChange: (id: string) => void
 }) {
   const categories = Array.from(new Set(services.map((s) => s.category)))
+  // Slow poll just for the host identity shown in the footer.
+  const { data: host } = usePoll(fetchHost, 30_000)
+  const hostname = host?.hostInfo?.hostname ?? "connecting…"
 
   return (
     <aside className="sidebar">
@@ -79,7 +83,7 @@ export function Sidebar({
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-xs font-semibold text-ink">admin</div>
-            <div className="mono text-[10px] text-ink-faint">root@homeserver</div>
+            <div className="mono text-[10px] text-ink-faint">root@{hostname}</div>
           </div>
           <span className="size-[7px] shrink-0 rounded-full bg-green-glow shadow-[0_0_6px_#22C55E]" />
         </div>

@@ -15,5 +15,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # History recorder storage — survives redeploys.
       - ./data:/app/data
+      # Per-server service catalog — edit on the server, never overwritten by deploys.
+      - ./backend/config:/app/config:ro
     environment:
       - DATA_DIR=/app/data
+      # Charts bucket by calendar day — set the container clock to yours.
+      # Override per deployment: TZ=Etc/UTC docker compose up -d
+      - TZ=${TZ:-Asia/Shanghai}
+    # Services run on the host: let the container reach them by name.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

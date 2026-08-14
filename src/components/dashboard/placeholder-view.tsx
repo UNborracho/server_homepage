@@ -11,7 +11,7 @@ export function PlaceholderView({
 }) {
   return (
     <>
-      <PageHeader title={label} subtitle="homeserver · 192.168.1.10" />
+      <PageHeader title={label} subtitle="homeserver" />
 
       <div className="glass-card flex flex-col items-center justify-center gap-4 py-24 text-center">
         <div className="flex size-16 items-center justify-center rounded-2xl border border-line bg-glass">
