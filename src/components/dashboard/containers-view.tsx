@@ -3,27 +3,17 @@ import { FileText, X } from "lucide-react"
 
 import { ContainerControls } from "@/components/dashboard/container-controls"
 import { PageHeader } from "@/components/dashboard/page-header"
-import {
-  fetchContainerLogs,
-  fetchContainers,
-  type ContainerInfo,
-} from "@/lib/api"
+import { StatusBadge } from "@/components/dashboard/status-badge"
+import { fetchContainerLogs, fetchContainers, type ContainerInfo } from "@/lib/api"
+import { containerColor, getServiceIcon, imageToIconKey } from "@/lib/icons"
 import { formatBytes } from "@/lib/format"
 import { usePoll } from "@/lib/use-poll"
-
-const STATE_STYLE: Record<string, { label: string; color: string; bg: string }> = {
-  running: { label: "running", color: "#22C55E", bg: "rgba(34,197,94,0.12)" },
-  created: { label: "created", color: "#6B7280", bg: "rgba(107,114,128,0.12)" },
-  restarting: { label: "restarting", color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
-  paused: { label: "paused", color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
-  exited: { label: "exited", color: "#6B7280", bg: "rgba(107,114,128,0.12)" },
-  dead: { label: "dead", color: "#EF4444", bg: "rgba(239,68,68,0.12)" },
-}
 
 export function ContainersView() {
   const { data, loading, refetch } = usePoll<ContainerInfo[]>(fetchContainers, 5000)
   const list = data ?? []
   const running = list.filter((c) => c.state === "running").length
+  const stopped = list.length - running
 
   const [logName, setLogName] = useState<string | null>(null)
   const [logText, setLogText] = useState<string | null>(null)
@@ -46,42 +36,17 @@ export function ContainersView() {
     <>
       <PageHeader
         title="Monitoring"
-        subtitle={`${list.length} containers · ${running} running`}
+        subtitle={`${list.length} containers · ${running} running · ${stopped} stopped`}
       />
 
-      <div className="glass-card overflow-x-auto p-2">
-        <table className="w-full min-w-[880px] border-collapse text-sm">
-          <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wider text-ink-faint">
-              <th className="px-3 py-2 font-semibold">Container</th>
-              <th className="px-3 py-2 font-semibold">Image</th>
-              <th className="px-3 py-2 font-semibold">State</th>
-              <th className="px-3 py-2 font-semibold">CPU</th>
-              <th className="px-3 py-2 font-semibold">Memory</th>
-              <th className="px-3 py-2 font-semibold">Ports</th>
-              <th className="px-3 py-2 text-right font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && list.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-ink-faint">
-                  loading…
-                </td>
-              </tr>
-            ) : list.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-ink-faint">
-                  No containers — is the Docker socket mounted?
-                </td>
-              </tr>
-            ) : (
-              list.map((c) => (
-                <ContainerRow key={c.id} c={c} refetch={refetch} onLogs={openLogs} />
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
+        {loading && list.length === 0 ? (
+          <span className="mono text-xs text-ink-faint">loading…</span>
+        ) : (
+          list.map((c) => (
+            <ContainerCard key={c.id} c={c} refetch={refetch} onLogs={openLogs} />
+          ))
+        )}
       </div>
 
       {logName && (
@@ -116,7 +81,10 @@ export function ContainersView() {
   )
 }
 
-function ContainerRow({
+/** Docker container rendered with the Figma service-card form:
+ *  42px icon chip + status badge / name / `image · ports` mono sub / footer
+ *  (mem + cpu on the left, Logs + controls on the right). */
+function ContainerCard({
   c,
   refetch,
   onLogs,
@@ -125,83 +93,105 @@ function ContainerRow({
   refetch: () => void
   onLogs: (name: string) => void
 }) {
-  const st = STATE_STYLE[c.state] ?? {
-    label: c.state,
-    color: "#6B7280",
-    bg: "rgba(107,114,128,0.12)",
-  }
-  const cpu = c.cpuPercent ?? null
-  const memPct = c.memPercent ?? null
+  const color = containerColor(c.state)
+  const Icon = getServiceIcon(imageToIconKey(c.image))
+  const isRunning = c.state === "running"
+  const status = isRunning ? "running" : c.state === "dead" ? "error" : "stopped"
 
   return (
-    <tr className="border-t border-line">
-      <td className="px-3 py-2.5 font-medium text-ink">{c.name}</td>
-      <td className="mono px-3 py-2.5 text-xs text-ink-soft">{c.image}</td>
-      <td className="px-3 py-2.5">
+    <div
+      className="glass-card svc-card group p-5"
+      style={{ "--svc": color } as CSSProperties}
+    >
+      <div className="mb-3.5 flex items-start justify-between">
         <span
-          className="mono inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-          style={{ background: st.bg, color: st.color } as CSSProperties}
+          className="flex size-[42px] items-center justify-center rounded-xl border"
+          style={{ background: `${color}18`, borderColor: `${color}30` }}
         >
-          {st.label}
+          <Icon className="size-5" style={{ color } as CSSProperties} />
         </span>
-      </td>
-      <td className="px-3 py-2.5">
-        <MiniMetric value={cpu} max={100} suffix="%" />
-      </td>
-      <td className="mono px-3 py-2.5 text-xs text-ink-soft">
-        {c.memUsage != null ? formatBytes(c.memUsage) : "—"}
-        {memPct != null && (
-          <span className="text-ink-faint"> ({memPct.toFixed(0)}%)</span>
-        )}
-      </td>
-      <td className="mono px-3 py-2.5 text-xs text-ink-faint">
-        {c.ports.join(" ") || "—"}
-      </td>
-      <td className="px-3 py-2.5">
-        <div className="flex items-center justify-end gap-1.5">
-          <button
-            type="button"
-            onClick={() => onLogs(c.name)}
-            title="View logs"
-            className="inline-flex items-center gap-1 rounded-[7px] border border-line px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-colors hover:text-ink"
-          >
-            <FileText className="size-3" />
-            Logs
-          </button>
-          <ContainerControls
-            name={c.name}
-            running={c.state === "running"}
-            onControl={refetch}
-          />
+        <StatusBadge status={status} />
+      </div>
+
+      <div className="mb-4">
+        <div className="truncate text-[15px] font-semibold text-ink" title={c.name}>
+          {c.name}
         </div>
-      </td>
-    </tr>
+        <div className="mono mt-1 truncate text-xs text-ink-faint" title={c.image}>
+          {shortImage(c.image)} {c.ports.length > 0 && `· ${c.ports[0]}`}
+        </div>
+      </div>
+
+      {/* mini gauges — Figma gauge-bar form factor */}
+      <div className="mb-4 space-y-2">
+        <MiniBar
+          label="CPU"
+          value={c.cpuPercent}
+          display={c.cpuPercent != null ? `${c.cpuPercent.toFixed(1)}%` : "—"}
+        />
+        <MiniBar
+          label="MEM"
+          value={c.memPercent}
+          display={c.memUsage != null ? formatBytes(c.memUsage) : "—"}
+        />
+      </div>
+
+      {/* footer: full-width action bar (Logs + controls), equal segments —
+          mem/state already shown by the gauges and badge above. */}
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          onClick={() => onLogs(c.name)}
+          title="View logs"
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded-[7px] border border-line px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-colors hover:text-ink"
+        >
+          <FileText className="size-3" />
+          Logs
+        </button>
+        <ContainerControls
+          spread
+          name={c.name}
+          running={isRunning}
+          onControl={refetch}
+        />
+      </div>
+    </div>
   )
 }
 
-function MiniMetric({
+function MiniBar({
+  label,
   value,
-  max,
-  suffix,
+  display,
 }: {
+  label: string
   value: number | null
-  max: number
-  suffix: string
+  display: string
 }) {
-  if (value == null) return <span className="text-ink-faint">—</span>
-  const pct = Math.min(100, (value / max) * 100)
+  const pct = value == null ? 0 : Math.min(100, value)
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1 w-12 overflow-hidden rounded-full bg-ink/10">
+      <span className="mono w-7 text-[10px] text-ink-faint">{label}</span>
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-ink/10">
         <div
-          className="h-full rounded-full bg-cyan-glow"
+          className="h-full rounded-full bg-cyan-glow transition-[width] duration-500"
           style={{ width: `${pct}%` } as CSSProperties}
         />
       </div>
-      <span className="mono w-12 text-right text-xs text-ink-soft">
-        {value.toFixed(1)}
-        {suffix}
-      </span>
+      <span className="mono w-14 text-right text-[10px] text-ink-soft">{display}</span>
     </div>
   )
+}
+
+/** "ghcr.io/immich-app/immich-server:v3.1.0" → "immich-server:v3.1.0".
+ *  Strips the registry host (first segment with a dot/port), then keeps the
+ *  last path segment — repo + tag is what identifies a card at a glance. */
+function shortImage(image: string): string {
+  const parts = image.split("/")
+  const hasRegistry =
+    parts.length > 1 &&
+    (parts[0] === "localhost" || parts[0].includes(".") || parts[0].includes(":"))
+  const path = hasRegistry ? parts.slice(1) : parts
+  const last = path[path.length - 1] ?? image
+  return last.length > 28 ? `${last.slice(0, 26)}…` : last
 }

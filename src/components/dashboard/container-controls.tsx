@@ -7,10 +7,13 @@ export function ContainerControls({
   name,
   running,
   onControl,
+  spread,
 }: {
   name: string
   running: boolean
   onControl?: () => void
+  /** "spread": buttons grow to fill the row (action-bar style, container cards). */
+  spread?: boolean
 }) {
   const [pending, setPending] = useState<ContainerAction | null>(null)
 
@@ -25,9 +28,10 @@ export function ContainerControls({
   }
 
   const busy = pending !== null
+  const grow = spread ? "flex-1 justify-center" : ""
 
   return (
-    <div className="flex gap-1.5">
+    <div className={spread ? "flex flex-1 gap-1.5" : "flex gap-1.5"}>
       {running ? (
         <>
           <Btn
@@ -35,6 +39,7 @@ export function ContainerControls({
             color="#F59E0B"
             label="Restart"
             busy={busy}
+            className={grow}
             onClick={() => act("restart")}
           />
           <Btn
@@ -42,6 +47,7 @@ export function ContainerControls({
             color="#EF4444"
             label="Stop"
             busy={busy}
+            className={grow}
             onClick={() => act("stop")}
           />
         </>
@@ -51,6 +57,7 @@ export function ContainerControls({
           color="#22C55E"
           label="Start"
           busy={busy}
+          className={grow}
           onClick={() => act("start")}
         />
       )}
@@ -63,12 +70,14 @@ function Btn({
   color,
   label,
   busy,
+  className,
   onClick,
 }: {
   icon: ReactNode
   color: string
   label: string
   busy: boolean
+  className?: string
   onClick: () => void
 }) {
   return (
@@ -77,7 +86,7 @@ function Btn({
       disabled={busy}
       onClick={onClick}
       title={label}
-      className="inline-flex items-center gap-1 rounded-[7px] border px-2.5 py-1 text-[11px] font-medium transition-colors duration-150 disabled:opacity-50"
+      className={`inline-flex items-center gap-1 rounded-[7px] border px-2.5 py-1 text-[11px] font-medium transition-colors duration-150 disabled:opacity-50 ${className ?? ""}`}
       style={{ background: `${color}1a`, color, borderColor: `${color}33` }}
     >
       {icon}
