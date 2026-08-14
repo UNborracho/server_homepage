@@ -1,5 +1,3 @@
-import { PassThrough, Readable } from "node:stream"
-
 import Docker from "dockerode"
 
 import type { ContainerAction, ContainerInfo } from "./types"
@@ -105,38 +103,31 @@ export async function controlContainer(
   listCache = null // invalidate so the next read reflects the new state
 }
 
-/** Last `tail` log lines of a container, stdout+stderr demultiplexed. */
+/** Strip docker's 8-byte stream frames from a non-tty log buffer. */
+function demuxBuffer(buf: Buffer): string {
+  const parts: Buffer[] = []
+  let off = 0
+  while (off + 8 <= buf.length) {
+    const size = buf.readUInt32BE(off + 4)
+    if (off + 8 + size > buf.length) break
+    parts.push(buf.subarray(off + 8, off + 8 + size))
+    off += 8 + size
+  }
+  // No parseable framing (tty output or tiny log) — return as-is.
+  return parts.length ? Buffer.concat(parts).toString("utf8") : buf.toString("utf8")
+}
+
+/** Last `tail` log lines of a container, stdout+stderr combined. */
 export async function containerLogs(name: string, tail = 200): Promise<string> {
   const d = client()
   if (!d) throw new Error("docker socket unavailable")
-  // dockerode's typings say Buffer, but with follow:false it actually
-  // resolves to a multiplexed Node stream — cast and demux it ourselves.
-  const stream = (await d.getContainer(name).logs({
+  // follow:false → dockerode resolves a Buffer of multiplexed stream frames.
+  const buf = (await d.getContainer(name).logs({
     stdout: true,
     stderr: true,
     tail,
     timestamps: false,
     follow: false,
-  })) as unknown as Readable
-  const stdout = new PassThrough()
-  const stderr = new PassThrough()
-  d.modem.demuxStream(stream, stdout, stderr)
-  const parts: Buffer[] = []
-  stdout.on("data", (chunk: Buffer) => parts.push(chunk))
-  stderr.on("data", (chunk: Buffer) => parts.push(chunk))
-  await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      stream.destroy()
-      resolve() // don't hang the request on a stuck stream
-    }, 5000)
-    stream.on("end", () => {
-      clearTimeout(timer)
-      resolve()
-    })
-    stream.on("error", (err: Error) => {
-      clearTimeout(timer)
-      reject(err)
-    })
-  })
-  return Buffer.concat(parts).toString("utf8")
+  })) as unknown as Buffer
+  return demuxBuffer(buf)
 }
