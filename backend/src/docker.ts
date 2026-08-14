@@ -114,7 +114,9 @@ function demuxBuffer(buf: Buffer): string {
     off += 8 + size
   }
   // No parseable framing (tty output or tiny log) — return as-is.
-  return parts.length ? Buffer.concat(parts).toString("utf8") : buf.toString("utf8")
+  const text = parts.length ? Buffer.concat(parts).toString("utf8") : buf.toString("utf8")
+  // Strip ANSI escapes (colors/cursors) — they render as junk in the UI.
+  return text.replace(/\u001b\[[0-9;]*[A-Za-z]/g, "")
 }
 
 /** Last `tail` log lines of a container, stdout+stderr combined. */
