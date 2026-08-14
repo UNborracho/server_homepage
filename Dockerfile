@@ -25,6 +25,10 @@ RUN sed -i "s#https://registry.npmjs.org#${NPM_REGISTRY}#g" package-lock.json &&
 # ---- 3. Runtime: one Node process serves dist + /api ----
 FROM ${NODE_IMAGE} AS runtime
 WORKDIR /app
+# tzdata so TZ names (compose sets Asia/Shanghai) resolve — alpine omits them.
+ARG APK_MIRROR=https://mirrors.aliyun.com
+RUN sed -i "s#https://dl-cdn.alpinelinux.org#${APK_MIRROR}#g" /etc/apk/repositories \
+  && apk add --no-cache tzdata
 ENV NODE_ENV=production
 COPY --from=backend-deps /app/node_modules ./node_modules
 COPY backend/package.json ./package.json
