@@ -7,7 +7,8 @@
       "category": "Media",
       "iconKey": "images",
       "color": "#3B82F6",
-      "port": 2283
+      "port": 2283,
+      "container": "immich_server"
     },
     {
       "id": "new-api",
@@ -16,7 +17,8 @@
       "category": "AI",
       "iconKey": "sparkles",
       "color": "#A855F7",
-      "port": 3000
+      "port": 3000,
+      "container": "new-api"
     },
     {
       "id": "kaneo",
@@ -25,16 +27,8 @@
       "category": "Productivity",
       "iconKey": "kanban",
       "color": "#F59E0B",
-      "port": 5173
-    },
-    {
-      "id": "portainer",
-      "name": "Portainer",
-      "url": "https://192.168.0.118:9443",
-      "category": "Infra",
-      "iconKey": "container",
-      "color": "#00E5FF",
-      "port": 9443
+      "port": 5173,
+      "container": "kaneo-kaneo-1"
     },
     {
       "id": "astrbot",
@@ -43,7 +37,8 @@
       "category": "AI",
       "iconKey": "bot",
       "color": "#22C55E",
-      "port": 6185
+      "port": 6185,
+      "container": "astrbot"
     }
   ]
 }

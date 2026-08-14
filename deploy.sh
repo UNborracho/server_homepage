@@ -20,6 +20,7 @@ rsync -avz --delete \
   --exclude 'Self-hosted Server Homepage' \
   --exclude '.env*' \
   --exclude 'deploy.sh' \
+  --exclude 'data' \
   ./ "${REMOTE}:${DEST}/"
 
 echo "▸ docker compose up -d --build"

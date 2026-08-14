@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { ContainersView } from "@/components/dashboard/containers-view"
 import { OverviewView } from "@/components/dashboard/overview-view"
 import { PlaceholderView } from "@/components/dashboard/placeholder-view"
 import { ServicesView } from "@/components/dashboard/services-view"
@@ -13,7 +14,7 @@ import { useTheme } from "@/lib/use-theme"
 export default function App() {
   const { isDark, toggle } = useTheme()
   const [activeNav, setActiveNav] = useState("overview")
-  const { data: services, error, loading } = usePoll(fetchServices, 5000)
+  const { data: services, error, loading, refetch } = usePoll(fetchServices, 5000)
   const serviceList = services ?? []
 
   return (
@@ -35,7 +36,7 @@ export default function App() {
         />
 
         <main className="flex-1 px-7 pb-12 pt-7">
-          {renderView(activeNav, serviceList, loading)}
+          {renderView(activeNav, serviceList, loading, refetch)}
         </main>
       </div>
     </div>
@@ -44,12 +45,21 @@ export default function App() {
 
 function renderView(
   activeNav: string,
-  services: ApiService[] | null,
+  services: ApiService[],
   loading: boolean,
+  onControl: () => void,
 ) {
   switch (activeNav) {
     case "services":
-      return <ServicesView services={services ?? []} loading={loading} />
+      return (
+        <ServicesView
+          services={services}
+          loading={loading}
+          onControl={onControl}
+        />
+      )
+    case "monitoring":
+      return <ContainersView />
     case "overview":
       return <OverviewView />
     default: {

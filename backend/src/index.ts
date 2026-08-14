@@ -5,10 +5,15 @@ import { Hono } from "hono"
 import { serve } from "@hono/node-server"
 
 import { readServices } from "./config"
+import { containerLogs, containerStateMap, controlContainer, listContainers } from "./docker"
+import { queryAggregate, querySeries, type HistoryWindow } from "./history"
 import { getSnapshot, startSampler } from "./metrics"
 import { probeAll } from "./probe"
+import { startRecorder } from "./recorder"
+import type { ContainerAction } from "./types"
 
 startSampler()
+startRecorder()
 
 const app = new Hono()
 const PORT = Number(process.env.PORT ?? 8088)
@@ -33,7 +38,57 @@ const MIME: Record<string, string> = {
 
 app.get("/api/health", (c) => c.json({ ok: true, ts: Date.now() }))
 app.get("/api/host", (c) => c.json(getSnapshot()))
-app.get("/api/services", async (c) => c.json(await probeAll(readServices())))
+
+app.get("/api/services", async (c) => {
+  const [services, states] = await Promise.all([
+    probeAll(readServices()),
+    containerStateMap(),
+  ])
+  return c.json(
+    services.map((service) => ({
+      ...service,
+      containerState: service.container
+        ? (states.get(service.container) ?? null)
+        : null,
+    })),
+  )
+})
+
+app.get("/api/containers", async (c) => c.json(await listContainers()))
+
+const HISTORY_WINDOWS = new Set<HistoryWindow>(["1h", "6h", "24h", "7d"])
+
+app.get("/api/history", (c) => {
+  const w = c.req.query("window") as HistoryWindow
+  if (!HISTORY_WINDOWS.has(w)) return c.json({ error: "invalid window" }, 400)
+  return c.json(querySeries(w))
+})
+
+app.get("/api/history/aggregate", (c) => c.json(queryAggregate()))
+
+app.get("/api/containers/:name/logs", async (c) => {
+  const name = c.req.param("name")
+  try {
+    const text = await containerLogs(name, 200)
+    return c.json({ name, text })
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 503)
+  }
+})
+
+app.post("/api/containers/:name/:action", async (c) => {
+  const name = c.req.param("name")
+  const action = c.req.param("action")
+  if (action !== "start" && action !== "stop" && action !== "restart") {
+    return c.json({ error: "invalid action" }, 400)
+  }
+  try {
+    await controlContainer(name, action as ContainerAction)
+    return c.json({ ok: true, name, action })
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 503)
+  }
+})
 
 // Static frontend (production single-container mode). In dev the Vite dev server
 // serves the frontend and proxies /api here, so STATIC_DIR is unset.

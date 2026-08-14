@@ -8,13 +8,31 @@ export interface ServiceConfig {
   iconKey: string
   color: string
   port: number
+  /** Docker container name (for start/stop control). Optional. */
+  container?: string
 }
 
 export interface ServiceStatusResult extends ServiceConfig {
   status: ServiceStatus
   latencyMs: number | null
   checkedAt: number
+  /** Docker container state if a container is mapped, e.g. "running" / "exited". */
+  containerState?: string | null
 }
+
+export interface ContainerInfo {
+  id: string
+  name: string
+  image: string
+  state: string
+  status: string
+  ports: string[]
+  cpuPercent: number | null
+  memUsage: number | null
+  memPercent: number | null
+}
+
+export type ContainerAction = "start" | "stop" | "restart"
 
 export interface HostMetrics {
   ts: number

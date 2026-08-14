@@ -1,17 +1,42 @@
+import { useEffect, useState } from "react"
+
 import { GaugeBar } from "@/components/dashboard/gauge-bar"
-import { HistoryPlaceholder } from "@/components/dashboard/history-placeholder"
 import { KpiCard } from "@/components/dashboard/kpi-card"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { SectionTitle } from "@/components/dashboard/section-title"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { DiskDonutChart } from "@/components/dashboard/charts/disk-donut-chart"
+import { NetworkAreaChart } from "@/components/dashboard/charts/network-area-chart"
+import { TrafficHeatmap } from "@/components/dashboard/charts/traffic-heatmap"
+import { WeeklyBarChart } from "@/components/dashboard/charts/weekly-bar-chart"
 import { GAUGE_DEFS, STAT_DEFS, type GaugeKey, type StatKey } from "@/lib/data"
-import { fetchHost, type HostMetrics } from "@/lib/api"
+import {
+  fetchHistory,
+  fetchHistoryAggregate,
+  fetchHost,
+  type HistoryAggregate,
+  type HistorySeries,
+  type HistoryWindow,
+  type HostMetrics,
+} from "@/lib/api"
 import { usePoll } from "@/lib/use-poll"
 import { formatDuration, formatNumber } from "@/lib/format"
 
 export function OverviewView() {
   const { data: host } = usePoll<HostMetrics>(fetchHost, 5000)
+
+  // History charts: Prometheus-free, fed by the backend recorder.
+  const [win, setWin] = useState<HistoryWindow>("24h")
+  const {
+    data: hist,
+    loading: histLoading,
+    refetch: refetchHist,
+  } = usePoll<HistorySeries>(() => fetchHistory(win), 60_000)
+  const { data: agg } = usePoll<HistoryAggregate>(fetchHistoryAggregate, 60_000)
+
+  useEffect(() => {
+    refetchHist() // window switch → immediate refetch
+  }, [win, refetchHist])
 
   const kpis = [
     {
@@ -42,7 +67,7 @@ export function OverviewView() {
     <>
       <PageHeader
         title="Overview"
-        subtitle="homeserver · 192.168.1.10 · Ubuntu 26.04 LTS"
+        subtitle="homeserver · 192.168.0.118 · Ubuntu 26.04 LTS"
       />
 
       {/* KPI row */}
@@ -66,7 +91,17 @@ export function OverviewView() {
               total={host?.disk?.total ?? 0}
             />
           </div>
-          <HistoryPlaceholder />
+          <NetworkAreaChart
+            points={hist?.points ?? []}
+            window={win}
+            onWindow={setWin}
+            loading={histLoading}
+          />
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <WeeklyBarChart weekly={agg?.weekly ?? []} />
+          <TrafficHeatmap heatmap={agg?.heatmap ?? []} maxMbps={agg?.maxMbps ?? 0} />
         </div>
       </div>
 

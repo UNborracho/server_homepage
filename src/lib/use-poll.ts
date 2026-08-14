@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 interface PollState<T> {
   data: T | null
   error: Error | null
   loading: boolean
+  refetch: () => void
 }
 
 /**
  * Polls `fetcher` immediately, then every `intervalMs`. On error the last
  * successful value is retained (stale) alongside the error flag so the UI can
- * keep showing data while a reconnect is attempted.
+ * keep showing data while a reconnect is attempted. `refetch` triggers an
+ * immediate re-run (used after mutating actions like container start/stop).
  */
 export function usePoll<T>(
   fetcher: () => Promise<T>,
@@ -19,31 +21,29 @@ export function usePoll<T>(
   const [error, setError] = useState<Error | null>(null)
   const fetcherRef = useRef(fetcher)
   fetcherRef.current = fetcher
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  useEffect(() => {
-    let alive = true
-    let timer: ReturnType<typeof setTimeout> | undefined
-
-    const run = async () => {
+  const run = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    ;(async () => {
       try {
         const value = await fetcherRef.current()
-        if (alive) {
-          setData(value)
-          setError(null)
-        }
+        setData(value)
+        setError(null)
       } catch (err) {
-        if (alive) setError(err instanceof Error ? err : new Error(String(err)))
+        setError(err instanceof Error ? err : new Error(String(err)))
       } finally {
-        if (alive) timer = setTimeout(run, intervalMs)
+        timerRef.current = setTimeout(run, intervalMs)
       }
-    }
-
-    run()
-    return () => {
-      alive = false
-      if (timer) clearTimeout(timer)
-    }
+    })()
   }, [intervalMs])
 
-  return { data, error, loading: data === null && error === null }
+  useEffect(() => {
+    run()
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [run])
+
+  return { data, error, loading: data === null && error === null, refetch: run }
 }

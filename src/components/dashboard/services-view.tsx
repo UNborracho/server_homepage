@@ -5,9 +5,11 @@ import type { ApiService } from "@/lib/api"
 export function ServicesView({
   services,
   loading,
+  onControl,
 }: {
   services: ApiService[]
   loading: boolean
+  onControl?: () => void
 }) {
   const running = services.filter((s) => s.status === "running").length
   const stopped = services.filter((s) => s.status === "stopped").length
@@ -29,7 +31,7 @@ export function ServicesView({
         {showSkeleton
           ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
           : services.map((service) => (
-              <ServiceCard key={service.id} service={service} />
+              <ServiceCard key={service.id} service={service} onControl={onControl} />
             ))}
       </div>
     </>
