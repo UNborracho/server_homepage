@@ -2,6 +2,26 @@
 
 自托管服务器仪表盘：单容器（Node/Hono 后端 + React 前端），实时主机指标、服务健康探测、Docker 容器控制与日志、历史图表（自建记录器，无 Prometheus 依赖）。
 
+## 界面
+
+### Overview — 主机总览
+
+KPI 卡（Network I/O / CPU / Memory / Uptime，带 24h 迷你趋势与环比）、磁盘用量、网络流量面积图（1H/6H/24H/7D）、每周流量与 7 天 × 24 小时热力图：
+
+![Overview](docs/overview.jpg)
+
+### Services — 服务目录
+
+每服务一张卡：健康探测延迟、容器启停（Start/Stop/Restart）。卡片链接按「打开看板用的地址 + 端口」自动生成，IP/域名/mDNS 访问无需配置：
+
+![Services](docs/services.jpg)
+
+### Monitoring — 容器监控
+
+全量 Docker 容器卡片：状态徽标、CPU/内存迷你仪表、日志查看（最近 200 行）、启停控制：
+
+![Monitoring](docs/monitoring.jpg)
+
 ## 部署
 
 ```bash
