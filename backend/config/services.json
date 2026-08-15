@@ -35,6 +35,15 @@
       "color": "#22C55E",
       "port": 6185,
       "container": "astrbot"
+    },
+    {
+      "id": "memos",
+      "name": "Memos",
+      "category": "Productivity",
+      "iconKey": "notebook",
+      "color": "#14B8A6",
+      "port": 5230,
+      "container": "memos"
     }
   ]
 }
